@@ -789,21 +789,26 @@ class Api:
         return MemoryResponse(ram = ram, cuda = cuda)
 
     def post_invocations(self, b64images, quality):
+        print("finished image generation")
         if shared.generated_images_s3uri:
             bucket, key = shared.get_bucket_and_key(shared.generated_images_s3uri)
             if key.endswith('/'):
                 key = key[ : -1]
             images = []
             for b64image in b64images:
+                print("开始编码")
                 bytes_data = export_pil_to_bytes(decode_to_image(b64image), quality)
                 image_id = datetime.datetime.now().strftime(f"%Y%m%d%H%M%S-{uuid.uuid4()}")
                 suffix = opts.samples_format.lower()
+                print("编码完成"+image_id)
                 shared.s3_client.put_object(
                     Body=bytes_data,
                     Bucket=bucket,
                     Key=f'{key}/{image_id}.{suffix}'
                 )
+                print("image uploaded to S3")
                 images.append(f's3://{bucket}/{key}/{image_id}.{suffix}')
+            
             return images
         else:
             return b64images
